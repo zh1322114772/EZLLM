@@ -22,7 +22,22 @@ target_compile_definitions(ezllm PRIVATE
 )
 
 if(MSVC)
-    target_compile_options(ezllm PRIVATE /W4 /utf-8 -O3 -march=native)
+    target_compile_options(ezllm PRIVATE
+        /W4
+        /utf-8
+
+        $<$<CONFIG:Release>:/O2>
+        $<$<CONFIG:Release>:/arch:AVX2>
+    )
 else()
-    target_compile_options(ezllm PRIVATE -Wall -Wextra -Wpedantic -O3 -march=native -finput-charset=UTF-8 -fexec-charset=UTF-8)
+    target_compile_options(ezllm PRIVATE
+        -Wall
+        -Wextra
+        -Wpedantic
+        -finput-charset=UTF-8
+        -fexec-charset=UTF-8
+
+        $<$<CONFIG:Release>:-O3>
+        $<$<CONFIG:Release>:-march=native>
+    )
 endif()

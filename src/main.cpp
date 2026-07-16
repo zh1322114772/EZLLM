@@ -1,6 +1,7 @@
 #include <iostream>
 #include "ModelContext.hpp"
 #include "Model.hpp"
+#include "Tokenizer\Tokenizer.hpp"
 #include "UTF8.hpp"
 
 int main() {
@@ -10,9 +11,10 @@ int main() {
 
     ModelContext *context = new ModelContext();
     Model *model = new Model(EZLLM_PROJECT_DIR + std::string("/Model/"));
+    Tokenizer *tokenizer = new Tokenizer(EZLLM_PROJECT_DIR + std::string("/Model/tokenizer/tokenizer.json"));
 
-    std::vector<int> question = {28120};
-    std::vector<int> ret = model->Generate(question, context, 2, 0.7, 2, true);
+    std::vector<int> question = {28120, 28120, 28120};
+    std::vector<int> ret = model->Generate(question, context, 2, 0.7, 10, true);
 
     for (int i = 0; i < ret.size(); i ++)
     {
