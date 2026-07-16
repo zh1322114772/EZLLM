@@ -1,24 +1,55 @@
 #include <iostream>
 #include "ModelContext.hpp"
 #include "Model.hpp"
-#include "Tokenizer\Tokenizer.hpp"
+#include "Tokenizer\GPT2Tokenizer.hpp"
 #include "UTF8.hpp"
 
-int main() {
+std::string getFormattedTemplate(std::string role, std::string content) 
+{
+    return "<|im_start|>" + role + "\n" + content + "<|im_end|>\n";
+}
+
+int main() 
+{
     //set utf-8 console
     InitializeUtf8Console();
 
 
     ModelContext *context = new ModelContext();
     Model *model = new Model(EZLLM_PROJECT_DIR + std::string("/Model/"));
-    Tokenizer *tokenizer = new Tokenizer(EZLLM_PROJECT_DIR + std::string("/Model/tokenizer/tokenizer.json"));
+    GPT2Tokenizer tokenizer(EZLLM_PROJECT_DIR + std::string("/Model/tokenizer/tokenizer.json"));
 
-    std::vector<int> question = {28120, 28120, 28120};
-    std::vector<int> ret = model->Generate(question, context, 2, 0.7, 10, true);
-
-    for (int i = 0; i < ret.size(); i ++)
+    const auto eosId = tokenizer.TokenToId("<|im_end|>");
+    if (!eosId)
     {
-        std::cout << ret[i] << " " << std::endl;
+        throw std::runtime_error("Tokenizer has no <|im_end|> token");
+    }
+
+    std::string sys_prompt = getFormattedTemplate("system", "你是一个乐于助人的中文助手。请始终使用中文回答。");
+    model->Generate(tokenizer.Encode(sys_prompt), context, eosId.value(), 1.0f, 0, false);
+
+
+    while(true)
+    {
+        std::cout << "[User]: " << std::flush;
+        std::string rawInput;
+    
+        if (!std::getline(std::cin, rawInput))
+        {
+            std::cout << '\n';
+            break;
+        }
+
+        // Prevent processing if the user just hits enter without typing
+        if (rawInput.empty()) continue; 
+
+
+        std::string formattedInput = getFormattedTemplate("user", rawInput);
+        formattedInput.append("<|im_start|>assistant\n");
+
+        std::vector<int> generatedIds = model->Generate(tokenizer.Encode(formattedInput), context, eosId.value(), 0.6f, 1024, false);
+
+        std::cout << "[Assistant]: "<<tokenizer.Decode(generatedIds) << std::endl;
     }
 
     return 0;

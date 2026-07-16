@@ -12,7 +12,6 @@ add_executable(ezllm
     src/LayerBlock.cpp
     src/TensorUtils.cpp
     src/Model.cpp
-    src/Tokenizer/Tokenizer.cpp
 )
 
 target_include_directories(ezllm PRIVATE include)

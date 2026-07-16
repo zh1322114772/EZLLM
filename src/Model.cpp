@@ -37,6 +37,7 @@ void Model::Prefill(std::vector<int> tokens, ModelContext *context)
     {
         Iter(context, tokens[i]);
     }
+    
 }
 
 void Model::Iter(ModelContext *context, int token)
@@ -54,7 +55,6 @@ void Model::Iter(ModelContext *context, int token)
     }
 
     context->Position += 1;
-    std::cout << "Token Generated" << std::endl;
 }
 
 int Model::Next(int lastToken, ModelContext *context, float temperture, bool sample)
@@ -77,7 +77,7 @@ int Model::Next(int lastToken, ModelContext *context, float temperture, bool sam
             maxScore = score;
             maxId = i;
         }
-        
+
     }
 
     if(!sample)
