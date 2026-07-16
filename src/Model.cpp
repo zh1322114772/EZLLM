@@ -3,7 +3,7 @@
 #include <limits>
 #include <math.h>
 
-std::vector<int> Model::Generate(std::vector<int> inputTokens, ModelContext *context, int eos, float temperture, int maxTokens)
+std::vector<int> Model::Generate(std::vector<int> inputTokens, ModelContext *context, int eos, float temperture, int maxTokens, bool sample)
 {
     int last = inputTokens.back();
     inputTokens.pop_back();
@@ -19,12 +19,12 @@ std::vector<int> Model::Generate(std::vector<int> inputTokens, ModelContext *con
 
     for (int i = 0; i < maxTokens; i++)
     {
-        int current = Next(last, context, temperture);
+        int current = Next(last, context, temperture, sample);
+        ret.push_back(current);
 
         if(current == eos)
             break;
 
-        ret.push_back(current);
         last = current;
     }
 
@@ -57,7 +57,7 @@ void Model::Iter(ModelContext *context, int token)
     std::cout << "Token Generated" << std::endl;
 }
 
-int Model::Next(int lastToken, ModelContext *context, float temperture)
+int Model::Next(int lastToken, ModelContext *context, float temperture, bool sample)
 {
     Iter(context, lastToken);
 
@@ -66,12 +66,22 @@ int Model::Next(int lastToken, ModelContext *context, float temperture)
 
     //compute Logits
     float maxScore = std::numeric_limits<float>::lowest();
+    int maxId = 0;
     for (int i = 0; i < 49152; i++)
     {
         float score = TensorUtils::ChannelDot(*_embedding, context->InputX, 0, i, 0, 0);
         context->Logits[i] = score;
-        maxScore = std::max(maxScore, score);
+
+        if(score > maxScore)
+        {
+            maxScore = score;
+            maxId = i;
+        }
+        
     }
+
+    if(!sample)
+        return maxId;
 
     //for numerical stability & temperture
     float all = 0;

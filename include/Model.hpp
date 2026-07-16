@@ -13,7 +13,7 @@ private:
     std::mt19937 _gen; 
 
     void Prefill(std::vector<int> tokens, ModelContext *context);
-    int Next(int lastToken, ModelContext *context, float temperture);
+    int Next(int lastToken, ModelContext *context, float temperture, bool sample);
 
     void Iter(ModelContext *context, int token);
 
@@ -21,5 +21,5 @@ public:
     ~Model();
     Model(std::string modelPath);
 
-    std::vector<int> Generate(std::vector<int> inputTokens, ModelContext *context, int eos, float temperture, int maxTokens);
+    std::vector<int> Generate(std::vector<int> inputTokens, ModelContext *context, int eos, float temperture, int maxTokens, bool sample);
 };

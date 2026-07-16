@@ -12,6 +12,7 @@ add_executable(ezllm
     src/LayerBlock.cpp
     src/TensorUtils.cpp
     src/Model.cpp
+    src/Tokenizer/Tokenizer.cpp
 )
 
 target_include_directories(ezllm PRIVATE include)
@@ -21,10 +22,7 @@ target_compile_definitions(ezllm PRIVATE
 )
 
 if(MSVC)
-    target_compile_options(ezllm PRIVATE /W4
-        -O3
-        -march=native
-    )
+    target_compile_options(ezllm PRIVATE /W4 /utf-8 -O3 -march=native)
 else()
-    target_compile_options(ezllm PRIVATE -Wall -Wextra -Wpedantic -O3 -march=native)
+    target_compile_options(ezllm PRIVATE -Wall -Wextra -Wpedantic -O3 -march=native -finput-charset=UTF-8 -fexec-charset=UTF-8)
 endif()
