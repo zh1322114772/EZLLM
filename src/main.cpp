@@ -25,7 +25,7 @@ int main()
         throw std::runtime_error("Tokenizer has no <|im_end|> token");
     }
 
-    std::string sys_prompt = getFormattedTemplate("system", "你是一个乐于助人的中文助手。请始终使用中文回答。");
+    std::string sys_prompt = getFormattedTemplate("system", "you are a helpful assistant");
     model->Generate(tokenizer.Encode(sys_prompt), context, eosId.value(), 1.0f, 0, false);
 
 

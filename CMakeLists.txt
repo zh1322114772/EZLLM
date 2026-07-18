@@ -12,6 +12,8 @@ add_executable(ezllm
     src/LayerBlock.cpp
     src/TensorUtils.cpp
     src/Model.cpp
+    src/Tensor4D/Tensor4DOps.cpp
+    src/Tensor4D/Tensor4D.cpp
 )
 
 target_include_directories(ezllm PRIVATE include)
@@ -38,5 +40,7 @@ else()
 
         $<$<CONFIG:Release>:-O3>
         $<$<CONFIG:Release>:-march=native>
+        $<$<CONFIG:Release>:-mavx2>
+        $<$<CONFIG:Release>:-mfma>
     )
 endif()
