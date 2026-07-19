@@ -194,8 +194,12 @@ void Tensor4D::MatMal(Tensor4D& m0, Tensor4D& m1)
     unsigned short int m1b1 = 0;
     unsigned int m0MatSize = m0._shape.L * m0._shape.C;
     unsigned int m1MatSize = m1._shape.L * m1._shape.C;
+    unsigned int tgtMatSize = _shape.L * _shape.C;
 
     if((newB0 != _shape.B0) || (newB1 != _shape.B1))
+        throw std::runtime_error("Invalid shape.");
+
+    if((_shape.L % 8) || (_shape.C % 8))
         throw std::runtime_error("Invalid shape.");
 
     for (unsigned short int b0 = 0; b0 < newB0; b0++)
@@ -204,13 +208,14 @@ void Tensor4D::MatMal(Tensor4D& m0, Tensor4D& m1)
         {
             unsigned int m0Offset = m0b0 * (m0._shape.B1 * m0MatSize) + (m0b1 * m0MatSize);
             unsigned int m1Offset = m1b0 * (m1._shape.B1 * m1MatSize) + (m1b1 * m1MatSize);
+            unsigned int tgtOffset = b0 * (_shape.B1 * tgtMatSize) + (b1 * tgtMatSize);
 
-            MatMul88(m0._data + m0Offset, m1._data + m1Offset, m0._shape.L, m0._shape.C, m1._shape.C);
+            MatMul88(m0._data + m0Offset, m1._data + m1Offset, _data + tgtOffset, m0._shape.L, m0._shape.C, m1._shape.C);
 
             m0b1 += m0b1Inc;
             m1b1 += m1b1Inc;
         }
-        
+
         m0b0 += m0b0Inc;
         m1b0 += m1b0Inc;
     }
