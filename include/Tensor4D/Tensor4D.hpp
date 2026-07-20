@@ -14,7 +14,7 @@ class Tensor4D
 {
 private:
     Shape _shape;
-    bool _cacheFriendly;
+    bool _cacheFriendly = false;
     float* _data;
     float*_buffer;
 
@@ -38,9 +38,13 @@ public:
 
     void Reshape(unsigned short int B0, unsigned short int B1, unsigned short int L, unsigned short int C);
 
-    void FromFile(std::string& path);
+    void FromFile(const std::string& path);
 
     void SetCacheFriendly(bool flag);
 
-    void MatMal(Tensor4D &m0, Tensor4D &m1);
+    void Set(float val);
+
+    void MatMul(Tensor4D &m0, Tensor4D &m1);
+
+    friend std::ostream& operator<<(std::ostream& os, Tensor4D& tensor);
 };

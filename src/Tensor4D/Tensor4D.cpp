@@ -62,7 +62,7 @@ void Tensor4D::Reshape(unsigned short int B0, unsigned short int B1, unsigned sh
 }
 
 
-void Tensor4D::FromFile(std::string& path)
+void Tensor4D::FromFile(const std::string& path)
 {
     std::ifstream file(path, std::ios::binary | std::ios::ate);
 
@@ -121,12 +121,14 @@ void Tensor4D::SetCacheFriendly(bool flag)
     if(_cacheFriendly == flag)
         return;
 
+    if((_shape.L % 8) || (_shape.C % 8))
+        throw std::runtime_error("Invalid Shape");
 
     unsigned int matSize = _shape.L * _shape.C;
 
-    for (unsigned short int b0; b0 < _shape.B0; b0++)
+    for (unsigned short int b0 = 0; b0 < _shape.B0; b0++)
     {
-        for (unsigned short int b1; b1 < _shape.B1; b1++)
+        for (unsigned short int b1 = 0; b1 < _shape.B1; b1++)
         {
             unsigned int offset = (b0 * _shape.B1 * matSize) + (b1 * matSize);
 
@@ -141,10 +143,18 @@ void Tensor4D::SetCacheFriendly(bool flag)
             memcpy(_data + offset, _buffer, matSize * sizeof(float));
         }
     }
+
+    _cacheFriendly = !_cacheFriendly;
 }
 
-void Tensor4D::MatMal(Tensor4D& m0, Tensor4D& m1)
+void Tensor4D::Set(float val)
 {
+    std::fill(_data, _data + (_shape.B0 * _shape.B1 * _shape.L * _shape.C), val);
+}
+
+void Tensor4D::MatMul(Tensor4D& m0, Tensor4D& m1)
+{
+
     if(!m0._cacheFriendly || !m1._cacheFriendly)
         throw std::runtime_error("m0 and m1 must be cache friendly.");
 
@@ -154,7 +164,6 @@ void Tensor4D::MatMal(Tensor4D& m0, Tensor4D& m1)
     if((_shape.L != m0._shape.L) || (_shape.C != m1._shape.C))
         throw std::runtime_error("Invalid shape.");
 
-    
     unsigned short int m0b0Inc = 0;
     unsigned short int m0b1Inc = 0;
     unsigned short int m1b0Inc = 0;
@@ -188,10 +197,6 @@ void Tensor4D::MatMal(Tensor4D& m0, Tensor4D& m1)
 
     unsigned short int newB0 = std::max(m0._shape.B0, m1._shape.B0);
     unsigned short int newB1 = std::max(m0._shape.B1, m1._shape.B1);
-    unsigned short int m0b0 = 0;
-    unsigned short int m0b1 = 0;
-    unsigned short int m1b0 = 0;
-    unsigned short int m1b1 = 0;
     unsigned int m0MatSize = m0._shape.L * m0._shape.C;
     unsigned int m1MatSize = m1._shape.L * m1._shape.C;
     unsigned int tgtMatSize = _shape.L * _shape.C;
@@ -202,14 +207,24 @@ void Tensor4D::MatMal(Tensor4D& m0, Tensor4D& m1)
     if((_shape.L % 8) || (_shape.C % 8))
         throw std::runtime_error("Invalid shape.");
 
+    //set _data to 0
+    Set(0);
+
+    unsigned short int m1b0 = 0;
+    unsigned short int m0b0 = 0;
+
     for (unsigned short int b0 = 0; b0 < newB0; b0++)
     {
+        unsigned short int m1b1 = 0;
+        unsigned short int m0b1 = 0;
+
         for (unsigned short int b1 = 0; b1 < newB1; b1++)
         {
+            
             unsigned int m0Offset = m0b0 * (m0._shape.B1 * m0MatSize) + (m0b1 * m0MatSize);
             unsigned int m1Offset = m1b0 * (m1._shape.B1 * m1MatSize) + (m1b1 * m1MatSize);
             unsigned int tgtOffset = b0 * (_shape.B1 * tgtMatSize) + (b1 * tgtMatSize);
-
+            
             MatMul88(m0._data + m0Offset, m1._data + m1Offset, _data + tgtOffset, m0._shape.L, m0._shape.C, m1._shape.C);
 
             m0b1 += m0b1Inc;
@@ -219,8 +234,64 @@ void Tensor4D::MatMal(Tensor4D& m0, Tensor4D& m1)
         m0b0 += m0b0Inc;
         m1b0 += m1b0Inc;
     }
-
     _cacheFriendly = true;
+}
+
+std::ostream& operator<<(std::ostream& os, Tensor4D& tensor)
+{
+    os << "Tensor Shape: ("
+       << tensor._shape.B0 << ", "
+       << tensor._shape.B1 << ", "
+       << tensor._shape.L  << ", "
+       << tensor._shape.C  << ")\n";
+
+    const unsigned int maxB0 = std::min<unsigned int>(tensor._shape.B0, 5);
+    const unsigned int maxB1 = std::min<unsigned int>(tensor._shape.B1, 5);
+    const unsigned int maxL  = std::min<unsigned int>(tensor._shape.L, 5);
+    const unsigned int maxC  = std::min<unsigned int>(tensor._shape.C, 20);
+
+    for (unsigned int b0 = 0; b0 < maxB0; ++b0)
+    {
+        for (unsigned int b1 = 0; b1 < maxB1; ++b1)
+        {
+            os << "\nBatch (" << b0 << ", " << b1 << "):\n";
+
+            for (unsigned int l = 0; l < maxL; ++l)
+            {
+                os << "Length " << l << ": ";
+
+                for (unsigned int c = 0; c < maxC; ++c)
+                {
+                    const std::size_t index =
+                        static_cast<std::size_t>(b0) * tensor._shape.B1 * tensor._shape.L * tensor._shape.C
+                        + static_cast<std::size_t>(b1) * tensor._shape.L * tensor._shape.C
+                        + static_cast<std::size_t>(l)  * tensor._shape.C
+                        + static_cast<std::size_t>(c);
+
+                    os << tensor._data[index] << ' ';
+                }
+
+                if (tensor._shape.C > maxC)
+                {
+                    os << "...";
+                }
+
+                os << '\n';
+            }
+
+            if (tensor._shape.L > maxL)
+            {
+                os << "...\n";
+            }
+        }
+    }
+
+    if (tensor._shape.B0 > maxB0 || tensor._shape.B1 > maxB1)
+    {
+        os << "\n...\n";
+    }
+
+    return os;
 }
 
 Tensor4D::~Tensor4D()

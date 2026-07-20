@@ -3,6 +3,8 @@
 #include "Model.hpp"
 #include "Tokenizer\GPT2Tokenizer.hpp"
 #include "UTF8.hpp"
+#include "Tensor4D\Tensor4D.hpp"
+#include <chrono>
 
 std::string getFormattedTemplate(std::string role, std::string content) 
 {
@@ -14,7 +16,38 @@ int main()
     //set utf-8 console
     InitializeUtf8Console();
 
+    Tensor4D projUp(1, 1, 2560, 960);
+    Tensor4D projdown(1, 1, 960, 2560);
+    Tensor4D res(1, 1, 2560, 2560);
+    projUp.FromFile(EZLLM_PROJECT_DIR + std::string("/Model/model.layers.0.mlp.up_proj.weight"));
+    projdown.FromFile(EZLLM_PROJECT_DIR + std::string("/Model/model.layers.0.mlp.down_proj.weight"));
 
+    Tensor projUp1(1, 2560, 960);
+    Tensor projdown1(1, 960, 2560);
+    Tensor res1(1, 2560, 2560);
+    projUp1.ReadFromFile(EZLLM_PROJECT_DIR + std::string("/Model/model.layers.0.mlp.up_proj.weight"));
+    projdown1.ReadFromFile(EZLLM_PROJECT_DIR + std::string("/Model/model.layers.0.mlp.down_proj.weight"));
+
+    auto start_time = std::chrono::high_resolution_clock::now();
+    res1.MatMul(projUp1, projdown1);
+    auto end_time = std::chrono::high_resolution_clock::now();
+    auto time = (end_time - start_time) / std::chrono::milliseconds(1);
+    std::cout << res1 << std::endl;
+    std::cout << time << std::endl;
+
+    start_time = std::chrono::high_resolution_clock::now();
+    projUp.SetCacheFriendly(true);
+    projdown.SetCacheFriendly(true);
+    res.MatMul(projUp, projdown);
+    res.SetCacheFriendly(false);
+    projUp.SetCacheFriendly(false);
+    projdown.SetCacheFriendly(false);
+    end_time = std::chrono::high_resolution_clock::now();
+    time = (end_time - start_time) / std::chrono::milliseconds(1);
+    std::cout << res << std::endl;
+    std::cout << time << std::endl;
+
+    /***
     ModelContext *context = new ModelContext();
     Model *model = new Model(EZLLM_PROJECT_DIR + std::string("/Model/"));
     GPT2Tokenizer tokenizer(EZLLM_PROJECT_DIR + std::string("/Model/tokenizer/tokenizer.json"));
@@ -51,6 +84,6 @@ int main()
 
         std::cout << "[Assistant]: "<<tokenizer.Decode(generatedIds) << std::endl;
     }
-
+    */
     return 0;
 }

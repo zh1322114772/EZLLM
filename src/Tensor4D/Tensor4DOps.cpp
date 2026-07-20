@@ -1,6 +1,7 @@
 #include "Tensor4D\Tensor4D.hpp"
 #include <immintrin.h>
 #include <cstddef>
+#include <iostream>
 
 #if defined(_MSC_VER)
     #define FORCE_INLINE __forceinline
@@ -47,20 +48,31 @@ void FORCE_INLINE MatMul8x8Accumulate(float *dst, float *src0, float *src1)
 
 void Tensor4D::Transpose(float *src, float *dst, unsigned short int l, unsigned short int c)
 {
-
+    for (unsigned short int i = 0; i < l; i++)
+    {
+        for (unsigned short int j = 0; j < c; j++)
+        {
+            dst[(j * l) + c] = src[(i * c) + j];
+        }
+    }
 }
 
 void Tensor4D::MatMul88(float *m0, float *m1, float *dest, unsigned int s0, unsigned int s1, unsigned int s2)
 {
-    for (unsigned int currentS0 = 0; currentS0 < s0; currentS0 += 8)
+    unsigned int tgtL = s0 / 8;
+    unsigned int tgtI = s1 / 8;
+    unsigned int tgtC = s2 / 8;
+
+    for (unsigned int l = 0; l < tgtL; l++)
     {
-        for (unsigned int currentS1 = 0; currentS1 < s1; currentS1 += 8)
+        for (unsigned int i = 0; i < tgtI; i++)
         {
-            for (unsigned int currentS2 = 0; currentS2 < s2; currentS2 += 8)
+            float *m0Offset = m0 + (l * tgtI * 64) + (i * 64);
+
+            for (unsigned int c = 0; c < tgtC; c++)
             {
-                float *m0Offset = m0 + (currentS0 * s1 * 64) + (currentS1 * 64);
-                float *m1Offset = m1 + (currentS1 * s2 * 64) + (currentS2 * 64);
-                float *tgtOffset = dest + (currentS0 * s1 * 64) + (currentS2 * 64);
+                float *m1Offset = m1 + (i * tgtC * 64) + (c * 64);
+                float *tgtOffset = dest + (l * tgtC * 64) + (c * 64);
 
                 MatMul8x8Accumulate(tgtOffset, m0Offset, m1Offset);
             }
@@ -70,10 +82,63 @@ void Tensor4D::MatMul88(float *m0, float *m1, float *dest, unsigned int s0, unsi
 
 void Tensor4D::CacheFriendly(float *src, float *dst, unsigned short int l, unsigned short int c)
 {
+    unsigned int dstOffset = 0;
 
+    for (unsigned short int currentL = 0; currentL < l; currentL+= 8)
+    {
+        for (unsigned short int currentC = 0; currentC < c; currentC+= 8)
+        {
+            __m256 c0 = _mm256_loadu_ps(src + ((currentL) * c) + currentC);
+            __m256 c1 = _mm256_loadu_ps(src + ((currentL + 1) * c) + currentC);
+            __m256 c2 = _mm256_loadu_ps(src + ((currentL + 2) * c) + currentC);
+            __m256 c3 = _mm256_loadu_ps(src + ((currentL + 3) * c) + currentC);
+            __m256 c4 = _mm256_loadu_ps(src + ((currentL + 4) * c) + currentC);
+            __m256 c5 = _mm256_loadu_ps(src + ((currentL + 5) * c) + currentC);
+            __m256 c6 = _mm256_loadu_ps(src + ((currentL + 6) * c) + currentC);
+            __m256 c7 = _mm256_loadu_ps(src + ((currentL + 7) * c) + currentC);
+            
+            _mm256_storeu_ps(dst + dstOffset,  c0);
+            _mm256_storeu_ps(dst + dstOffset + 8,  c1);
+            _mm256_storeu_ps(dst + dstOffset + 16, c2);
+            _mm256_storeu_ps(dst + dstOffset + 24, c3);
+            _mm256_storeu_ps(dst + dstOffset + 32, c4);
+            _mm256_storeu_ps(dst + dstOffset + 40, c5);
+            _mm256_storeu_ps(dst + dstOffset + 48, c6);
+            _mm256_storeu_ps(dst + dstOffset + 56, c7);
+
+            dstOffset += 64;
+        }
+    }
 }
+
 
 void Tensor4D::AccessFriendly(float *src, float *dst, unsigned short int l, unsigned short int c)
 {
+    unsigned int srcOffset = 0;
 
+    for (unsigned short int currentL = 0; currentL < l; currentL+= 8)
+    {
+        for (unsigned short int currentC = 0; currentC < c; currentC+= 8)
+        {
+            __m256 c0 = _mm256_loadu_ps(src + srcOffset);
+            __m256 c1 = _mm256_loadu_ps(src + srcOffset + 8);
+            __m256 c2 = _mm256_loadu_ps(src + srcOffset + 16);
+            __m256 c3 = _mm256_loadu_ps(src + srcOffset + 24);
+            __m256 c4 = _mm256_loadu_ps(src + srcOffset + 32);
+            __m256 c5 = _mm256_loadu_ps(src + srcOffset + 40);
+            __m256 c6 = _mm256_loadu_ps(src + srcOffset + 48);
+            __m256 c7 = _mm256_loadu_ps(src + srcOffset + 56);
+            
+            _mm256_storeu_ps(dst + ((currentL) * c) + currentC, c0);
+            _mm256_storeu_ps(dst + ((currentL + 1) * c) + currentC, c1);
+            _mm256_storeu_ps(dst + ((currentL + 2) * c) + currentC, c2);
+            _mm256_storeu_ps(dst + ((currentL + 3) * c) + currentC, c3);
+            _mm256_storeu_ps(dst + ((currentL + 4) * c) + currentC, c4);
+            _mm256_storeu_ps(dst + ((currentL + 5) * c) + currentC, c5);
+            _mm256_storeu_ps(dst + ((currentL + 6) * c) + currentC, c6);
+            _mm256_storeu_ps(dst + ((currentL + 7) * c) + currentC, c7);
+
+            srcOffset += 64;
+        }
+    }
 }
