@@ -12,8 +12,10 @@ add_executable(ezllm
     src/LayerBlock.cpp
     src/TensorUtils.cpp
     src/Model.cpp
-    src/Tensor4D/Tensor4DOps.cpp
+    src/Tensor4D/MathOps.cpp
     src/Tensor4D/Tensor4D.cpp
+    src/Tensor4D/Tensor4DUtils.cpp
+    src/Tensor4D/SlicedTensor4D.cpp
 )
 
 target_include_directories(ezllm PRIVATE include)

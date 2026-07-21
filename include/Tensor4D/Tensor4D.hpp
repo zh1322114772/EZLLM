@@ -1,6 +1,7 @@
 
 #pragma once
 #include <string>
+#include "Tensor4D/SlicedTensor4D.hpp"
 
 struct Shape
 {
@@ -18,17 +19,6 @@ private:
     float* _data;
     float*_buffer;
 
-    void Transpose(float *src, float *dst, unsigned short int l, unsigned short int c);
-
-    void MatMul88(float *m0, float *m1, float *dest, unsigned int s0,  unsigned int s1,  unsigned int s2);
-
-    //void BatchMul88(Tensor4D &m0, Tensor4D &m1, unsigned int offsetm0, unsigned int offsetm1);
-    //to be implemeneted
-
-    void CacheFriendly(float *src, float *dst, unsigned short int l, unsigned short int c);
-
-    void AccessFriendly(float *src, float *dst, unsigned short int l, unsigned short int c);
-
 public:
     Tensor4D(unsigned short int B0, unsigned short int B1, unsigned short int L, unsigned short int C);
 
@@ -38,13 +28,31 @@ public:
 
     void Reshape(unsigned short int B0, unsigned short int B1, unsigned short int L, unsigned short int C);
 
+    Shape GetShape();
+
     void FromFile(const std::string& path);
 
     void SetCacheFriendly(bool flag);
 
+    bool IsCacheFriendly();
+
     void Set(float val);
 
     void MatMul(Tensor4D &m0, Tensor4D &m1);
+
+    SlicedTensor4D AsSlicedTensor(
+        unsigned short int b0l,
+        unsigned short int b0u,
+        unsigned short int b1l,
+        unsigned short int b1u,
+        unsigned short int ll,
+        unsigned short int lu,
+        unsigned short int cl,
+        unsigned short int cu);
+
+    
+
+    float *GetStorage();
 
     friend std::ostream& operator<<(std::ostream& os, Tensor4D& tensor);
 };

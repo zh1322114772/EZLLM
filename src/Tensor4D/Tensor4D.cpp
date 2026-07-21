@@ -1,8 +1,11 @@
 #include "Tensor4D\Tensor4D.hpp"
+#include "Tensor4D\MathOps.hpp"
 #include <fstream>
 #include <stdexcept>
 #include <iostream>
 #include <math.h>
+
+
 
 Tensor4D::Tensor4D(unsigned short int B0, unsigned short int B1, unsigned short int L, unsigned short int C)
 {
@@ -30,7 +33,7 @@ void Tensor4D::T()
         for (int b1 = 0; b0 < _shape.B1; b1++)
         {
             unsigned int offset = (b0 * _shape.B1 * matSize) + (b1 * matSize);
-            Transpose(_data + offset, _buffer, _shape.L, _shape.C);
+            MathOps::Transpose(_data + offset, _buffer, _shape.L, _shape.C);
             memcpy(_data + offset, _buffer, static_cast<std::size_t>(matSize * sizeof(float)));
         }
     }
@@ -134,10 +137,10 @@ void Tensor4D::SetCacheFriendly(bool flag)
 
             if(flag)
             {
-                CacheFriendly(_data + offset, _buffer, _shape.L, _shape.C);
+                MathOps::CacheFriendly(_data + offset, _buffer, _shape.L, _shape.C);
             }else
             {
-                AccessFriendly(_data + offset, _buffer, _shape.L, _shape.C);
+                MathOps::AccessFriendly(_data + offset, _buffer, _shape.L, _shape.C);
             }
 
             memcpy(_data + offset, _buffer, matSize * sizeof(float));
@@ -225,7 +228,7 @@ void Tensor4D::MatMul(Tensor4D& m0, Tensor4D& m1)
             unsigned int m1Offset = m1b0 * (m1._shape.B1 * m1MatSize) + (m1b1 * m1MatSize);
             unsigned int tgtOffset = b0 * (_shape.B1 * tgtMatSize) + (b1 * tgtMatSize);
             
-            MatMul88(m0._data + m0Offset, m1._data + m1Offset, _data + tgtOffset, m0._shape.L, m0._shape.C, m1._shape.C);
+            MathOps::MatMul88(m0._data + m0Offset, m1._data + m1Offset, _data + tgtOffset, m0._shape.L, m0._shape.C, m1._shape.C);
 
             m0b1 += m0b1Inc;
             m1b1 += m1b1Inc;
@@ -235,6 +238,35 @@ void Tensor4D::MatMul(Tensor4D& m0, Tensor4D& m1)
         m1b0 += m1b0Inc;
     }
     _cacheFriendly = true;
+}
+
+SlicedTensor4D Tensor4D::AsSlicedTensor(
+        unsigned short int b0l,
+        unsigned short int b0u,
+        unsigned short int b1l,
+        unsigned short int b1u,
+        unsigned short int ll,
+        unsigned short int lu,
+        unsigned short int cl,
+        unsigned short int cu)
+{
+    Shape lower;
+    Shape upper;
+    lower.B0 = b0l;
+    lower.B1 = b1l;
+    lower.L = ll;
+    lower.C = cl;
+    upper.B0 = b0u;
+    upper.B1 = b1u;
+    upper.L = lu;
+    upper.C = cu;
+
+    return SlicedTensor4D(lower, upper, this);
+}
+
+bool Tensor4D::IsCacheFriendly()
+{
+    return _cacheFriendly;
 }
 
 std::ostream& operator<<(std::ostream& os, Tensor4D& tensor)
@@ -292,6 +324,11 @@ std::ostream& operator<<(std::ostream& os, Tensor4D& tensor)
     }
 
     return os;
+}
+
+Shape Tensor4D::GetShape()
+{
+    return _shape;
 }
 
 Tensor4D::~Tensor4D()

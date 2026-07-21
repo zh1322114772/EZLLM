@@ -1,15 +1,7 @@
-#include "Tensor4D\Tensor4D.hpp"
+#include "Tensor4D\MathOps.hpp"
 #include <immintrin.h>
 #include <cstddef>
 #include <iostream>
-
-#if defined(_MSC_VER)
-    #define FORCE_INLINE __forceinline
-#elif defined(__GNUC__) || defined(__clang__)
-    #define FORCE_INLINE inline __attribute__((always_inline))
-#else
-    #define FORCE_INLINE inline
-#endif
 
 void FORCE_INLINE MatMul8x8Accumulate(float *dst, float *src0, float *src1)
 {
@@ -46,7 +38,7 @@ void FORCE_INLINE MatMul8x8Accumulate(float *dst, float *src0, float *src1)
     _mm256_storeu_ps(dst + 56, c7);
 }
 
-void Tensor4D::Transpose(float *src, float *dst, unsigned short int l, unsigned short int c)
+void MathOps::Transpose(float *src, float *dst, unsigned short int l, unsigned short int c)
 {
     for (unsigned short int i = 0; i < l; i++)
     {
@@ -57,7 +49,7 @@ void Tensor4D::Transpose(float *src, float *dst, unsigned short int l, unsigned 
     }
 }
 
-void Tensor4D::MatMul88(float *m0, float *m1, float *dest, unsigned int s0, unsigned int s1, unsigned int s2)
+void MathOps::MatMul88(float *m0, float *m1, float *dest, unsigned int s0, unsigned int s1, unsigned int s2)
 {
     unsigned int tgtL = s0 / 8;
     unsigned int tgtI = s1 / 8;
@@ -80,7 +72,7 @@ void Tensor4D::MatMul88(float *m0, float *m1, float *dest, unsigned int s0, unsi
     }
 }
 
-void Tensor4D::CacheFriendly(float *src, float *dst, unsigned short int l, unsigned short int c)
+void MathOps::CacheFriendly(float *src, float *dst, unsigned short int l, unsigned short int c)
 {
     unsigned int dstOffset = 0;
 
@@ -112,7 +104,7 @@ void Tensor4D::CacheFriendly(float *src, float *dst, unsigned short int l, unsig
 }
 
 
-void Tensor4D::AccessFriendly(float *src, float *dst, unsigned short int l, unsigned short int c)
+void MathOps::AccessFriendly(float *src, float *dst, unsigned short int l, unsigned short int c)
 {
     unsigned int srcOffset = 0;
 
