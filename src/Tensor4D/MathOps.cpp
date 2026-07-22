@@ -38,12 +38,47 @@ void FORCE_INLINE MatMul8x8Accumulate(float *dst, float *src0, float *src1)
     _mm256_storeu_ps(dst + 56, c7);
 }
 
+float FORCE_INLINE HorizontalSum(__m256 value)
+{
+    __m128 low = _mm256_castps256_ps128(value);
+    __m128 high = _mm256_extractf128_ps(value, 1);
+
+    __m128 sum = _mm_add_ps(low, high);
+
+    sum = _mm_hadd_ps(sum, sum);
+    sum = _mm_hadd_ps(sum, sum);
+
+    return _mm_cvtss_f32(sum);
+}
+
+float MathOps::VecSum(float *src, unsigned int size)
+{
+    unsigned int alignedSize = (size / 8) * 8;
+    float ret = 0;
+
+    __m256 sRet = _mm256_setzero_ps();
+    for (unsigned int i = 0; i < alignedSize; i+=8)
+    {
+        __m256 a = _mm256_loadu_ps(src + i);
+        sRet  = _mm256_add_ps(sRet, a);
+    }
+
+    ret += HorizontalSum(sRet);
+
+    for (unsigned int i = alignedSize; i < size; i++)
+    {
+        ret += src[i];
+    }
+
+    return ret;
+}
+
 void MathOps::ElementwiseMul(float *src, float val, float* dst, unsigned int size)
 {
     unsigned int alignedSize = (size / 8) * 8;
     
     __m256 b = _mm256_set1_ps(val);
-    for (int i = 0; i < alignedSize; i+=8)
+    for (unsigned int i = 0; i < alignedSize; i+=8)
     {
         __m256 a = _mm256_loadu_ps(src + i);
         __m256 result = _mm256_mul_ps(a, b);
@@ -51,23 +86,17 @@ void MathOps::ElementwiseMul(float *src, float val, float* dst, unsigned int siz
         _mm256_storeu_ps(dst + i, result);
     }
 
-    for (int i = alignedSize; i < size; i++)
+    for (unsigned int i = alignedSize; i < size; i++)
     {
         dst[i] = src[i] * val;
     }
-}
-
-float MathOps::VecSum(float *src, unsigned int size)
-{
-    //to be implemented
-    return 0;
 }
 
 void MathOps::ElementwiseMul(float *src, float *src1, float* dst, unsigned int size)
 {
     unsigned int alignedSize = (size / 8) * 8;
 
-    for (int i = 0; i < alignedSize; i+=8)
+    for (unsigned int i = 0; i < alignedSize; i+=8)
     {
         __m256 a = _mm256_loadu_ps(src + i);
         __m256 b = _mm256_loadu_ps(src1 + i);
@@ -76,9 +105,9 @@ void MathOps::ElementwiseMul(float *src, float *src1, float* dst, unsigned int s
         _mm256_storeu_ps(dst + i, result);
     }
 
-    for (int i = alignedSize; i < size; i++)
+    for (unsigned int i = alignedSize; i < size; i++)
     {
-        dst[i] = src[i] + src1[i];
+        dst[i] = src[i] * src1[i];
     }
 }
 
@@ -87,7 +116,7 @@ void MathOps::VecAdd(float *src, float val, float *dst, unsigned int size)
     unsigned int alignedSize = (size / 8) * 8;
     
     __m256 b = _mm256_set1_ps(val);
-    for (int i = 0; i < alignedSize; i+=8)
+    for (unsigned int i = 0; i < alignedSize; i+=8)
     {
         __m256 a = _mm256_loadu_ps(src + i);
         __m256 result = _mm256_add_ps(a, b);
@@ -95,7 +124,7 @@ void MathOps::VecAdd(float *src, float val, float *dst, unsigned int size)
         _mm256_storeu_ps(dst + i, result);
     }
 
-    for (int i = alignedSize; i < size; i++)
+    for (unsigned int i = alignedSize; i < size; i++)
     {
         dst[i] = src[i] + val;
     }
@@ -105,7 +134,7 @@ void MathOps::VecAdd(float *src, float *src1, float *dst, unsigned int size)
 {
     unsigned int alignedSize = (size / 8) * 8;
 
-    for (int i = 0; i < alignedSize; i+=8)
+    for (unsigned int i = 0; i < alignedSize; i+=8)
     {
         __m256 a = _mm256_loadu_ps(src + i);
         __m256 b = _mm256_loadu_ps(src1 + i);
@@ -114,7 +143,7 @@ void MathOps::VecAdd(float *src, float *src1, float *dst, unsigned int size)
         _mm256_storeu_ps(dst + i, result);
     }
 
-    for (int i = alignedSize; i < size; i++)
+    for (unsigned int i = alignedSize; i < size; i++)
     {
         dst[i] = src[i] + src1[i];
     }

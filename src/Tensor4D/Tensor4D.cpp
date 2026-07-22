@@ -14,6 +14,7 @@ Tensor4D::Tensor4D(unsigned short int B0, unsigned short int B1, unsigned short 
     _shape.B1 = B1;
     _shape.L = L;
     _shape.C = C;
+    ComputeOffsets();
 
     if ((B0 * B1 * L * C) <= 0)
         throw std::invalid_argument("Invalid shape");
@@ -42,6 +43,7 @@ void Tensor4D::T()
     unsigned short int temp = _shape.C;
     _shape.C = _shape.L;
     _shape.L = temp;
+    ComputeOffsets();
 }
 
 void Tensor4D::Reshape(unsigned short int B0, unsigned short int B1, unsigned short int L, unsigned short int C)
@@ -63,6 +65,7 @@ void Tensor4D::Reshape(unsigned short int B0, unsigned short int B1, unsigned sh
     _shape.B1 = B1;
     _shape.L = L;
     _shape.C = C;
+    ComputeOffsets();
 }
 
 
@@ -306,12 +309,7 @@ std::ostream& operator<<(std::ostream& os, Tensor4D& tensor)
 
                 for (unsigned int c = 0; c < maxC; ++c)
                 {
-                    const std::size_t index =
-                        static_cast<std::size_t>(b0) * tensor._shape.B1 * tensor._shape.L * tensor._shape.C
-                        + static_cast<std::size_t>(b1) * tensor._shape.L * tensor._shape.C
-                        + static_cast<std::size_t>(l)  * tensor._shape.C
-                        + static_cast<std::size_t>(c);
-
+                    const std::size_t index = tensor.GetIndex(b0, b1, l, c);
                     os << tensor._data[index] << ' ';
                 }
 
@@ -348,8 +346,42 @@ float* Tensor4D::GetStorage()
     return _data;
 }
 
+float* Tensor4D::GetStorage(unsigned short int b0, unsigned short int b1, unsigned short int l, unsigned short int c)
+{
+    return _data + GetIndex(b0, b1, l, c);
+}
+
+
 Tensor4D::~Tensor4D()
 {
     delete[] _data;
     delete[] _buffer;
+}
+
+float Tensor4D::GetValue(unsigned short int b0, unsigned short int b1, unsigned short int l, unsigned short int c)
+{
+    return _data[GetIndex(b0, b1, l, c)];
+}
+
+void Tensor4D::SetValue(unsigned short int b0, unsigned short int b1, unsigned short int l, unsigned short int c, float v)
+{
+    _data[GetIndex(b0, b1, l, c)] = v;
+}
+
+float* Tensor4D::GetLCBuffer()
+{
+    return _buffer;
+}
+
+unsigned int Tensor4D::GetIndex(unsigned short int b0, unsigned short int b1, unsigned short int l, unsigned short int c)
+{
+    return (b0 * (_offsets.B0)) + (b1 * (_offsets.B1)) + (l * _offsets.L) + c;
+}
+
+void Tensor4D::ComputeOffsets()
+{
+    _offsets.B0 = _shape.B1 * _shape.L * _shape.C;
+    _offsets.B1 = _shape.L * _shape.C;
+    _offsets.L = _shape.C;
+    _offsets.C = 0;
 }

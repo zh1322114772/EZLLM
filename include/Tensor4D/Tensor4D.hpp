@@ -9,9 +9,14 @@ class Tensor4D
 {
 private:
     Shape _shape;
+    Shape _offsets;
     bool _cacheFriendly = false;
     float* _data;
     float*_buffer;
+
+    unsigned int GetIndex(unsigned short int b0, unsigned short int b1, unsigned short int l, unsigned short int c);
+
+    void ComputeOffsets();
 
 public:
     Tensor4D(unsigned short int B0, unsigned short int B1, unsigned short int L, unsigned short int C);
@@ -36,6 +41,10 @@ public:
 
     void MatMul(Tensor4D &m0, Tensor4D &m1);
 
+    float GetValue(unsigned short int b0, unsigned short int b1, unsigned short int l, unsigned short int c);
+
+    void SetValue(unsigned short int b0, unsigned short int b1, unsigned short int l, unsigned short int c, float v);
+
     SlicedTensor4D AsSlicedTensor(
         unsigned short int b0l,
         unsigned short int b0u,
@@ -49,6 +58,10 @@ public:
     
 
     float *GetStorage();
+
+    float *GetStorage(unsigned short int b0, unsigned short int b1, unsigned short int l, unsigned short int c);
+
+    float *GetLCBuffer();
 
     friend std::ostream& operator<<(std::ostream& os, Tensor4D& tensor);
 };
