@@ -1,5 +1,7 @@
 #pragma once
-#include "Tensor4D/Tensor4D.hpp"
+#include "Tensor4D/Shape.hpp"
+
+class Tensor4D;
 
 class SlicedTensor4D
 {

@@ -38,6 +38,88 @@ void FORCE_INLINE MatMul8x8Accumulate(float *dst, float *src0, float *src1)
     _mm256_storeu_ps(dst + 56, c7);
 }
 
+void MathOps::ElementwiseMul(float *src, float val, float* dst, unsigned int size)
+{
+    unsigned int alignedSize = (size / 8) * 8;
+    
+    __m256 b = _mm256_set1_ps(val);
+    for (int i = 0; i < alignedSize; i+=8)
+    {
+        __m256 a = _mm256_loadu_ps(src + i);
+        __m256 result = _mm256_mul_ps(a, b);
+
+        _mm256_storeu_ps(dst + i, result);
+    }
+
+    for (int i = alignedSize; i < size; i++)
+    {
+        dst[i] = src[i] * val;
+    }
+}
+
+float MathOps::VecSum(float *src, unsigned int size)
+{
+    //to be implemented
+    return 0;
+}
+
+void MathOps::ElementwiseMul(float *src, float *src1, float* dst, unsigned int size)
+{
+    unsigned int alignedSize = (size / 8) * 8;
+
+    for (int i = 0; i < alignedSize; i+=8)
+    {
+        __m256 a = _mm256_loadu_ps(src + i);
+        __m256 b = _mm256_loadu_ps(src1 + i);
+        __m256 result = _mm256_mul_ps(a, b);
+
+        _mm256_storeu_ps(dst + i, result);
+    }
+
+    for (int i = alignedSize; i < size; i++)
+    {
+        dst[i] = src[i] + src1[i];
+    }
+}
+
+void MathOps::VecAdd(float *src, float val, float *dst, unsigned int size)
+{
+    unsigned int alignedSize = (size / 8) * 8;
+    
+    __m256 b = _mm256_set1_ps(val);
+    for (int i = 0; i < alignedSize; i+=8)
+    {
+        __m256 a = _mm256_loadu_ps(src + i);
+        __m256 result = _mm256_add_ps(a, b);
+
+        _mm256_storeu_ps(dst + i, result);
+    }
+
+    for (int i = alignedSize; i < size; i++)
+    {
+        dst[i] = src[i] + val;
+    }
+}
+
+void MathOps::VecAdd(float *src, float *src1, float *dst, unsigned int size)
+{
+    unsigned int alignedSize = (size / 8) * 8;
+
+    for (int i = 0; i < alignedSize; i+=8)
+    {
+        __m256 a = _mm256_loadu_ps(src + i);
+        __m256 b = _mm256_loadu_ps(src1 + i);
+        __m256 result = _mm256_add_ps(a, b);
+
+        _mm256_storeu_ps(dst + i, result);
+    }
+
+    for (int i = alignedSize; i < size; i++)
+    {
+        dst[i] = src[i] + src1[i];
+    }
+}
+
 void MathOps::Transpose(float *src, float *dst, unsigned short int l, unsigned short int c)
 {
     for (unsigned short int i = 0; i < l; i++)

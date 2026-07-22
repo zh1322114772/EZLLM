@@ -1,15 +1,9 @@
 
 #pragma once
 #include <string>
-#include "Tensor4D/SlicedTensor4D.hpp"
+#include "Tensor4D/Shape.hpp"
 
-struct Shape
-{
-    unsigned short int B0;
-    unsigned short int B1;
-    unsigned short int L;
-    unsigned short int C;
-};
+class SlicedTensor4D;
 
 class Tensor4D
 {
@@ -35,6 +29,8 @@ public:
     void SetCacheFriendly(bool flag);
 
     bool IsCacheFriendly();
+
+    void Add(Tensor4D& src);
 
     void Set(float val);
 

@@ -1,4 +1,5 @@
 #include "Tensor4D\Tensor4D.hpp"
+#include "Tensor4D\SlicedTensor4D.hpp"
 #include "Tensor4D\MathOps.hpp"
 #include <fstream>
 #include <stdexcept>
@@ -240,6 +241,17 @@ void Tensor4D::MatMul(Tensor4D& m0, Tensor4D& m1)
     _cacheFriendly = true;
 }
 
+void Tensor4D::Add(Tensor4D& src)
+{
+    if(src.IsCacheFriendly() != IsCacheFriendly())
+        throw std::runtime_error("Wrong memory layout.");
+
+    if((_shape.B0 != src._shape.B0) || (_shape.B1 != src._shape.B1) || (_shape.L != src._shape.L) || (_shape.C != src._shape.C))
+        throw std::runtime_error("Invalid shape.");
+
+    MathOps::VecAdd(src._data, _data, _data, _shape.B0 * _shape.B1 * _shape.L * _shape.C * sizeof(float));
+}
+
 SlicedTensor4D Tensor4D::AsSlicedTensor(
         unsigned short int b0l,
         unsigned short int b0u,
@@ -329,6 +341,11 @@ std::ostream& operator<<(std::ostream& os, Tensor4D& tensor)
 Shape Tensor4D::GetShape()
 {
     return _shape;
+}
+
+float* Tensor4D::GetStorage()
+{
+    return _data;
 }
 
 Tensor4D::~Tensor4D()
