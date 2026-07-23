@@ -8,7 +8,7 @@
 
 
 
-Tensor4D::Tensor4D(unsigned short int B0, unsigned short int B1, unsigned short int L, unsigned short int C)
+Tensor4D::Tensor4D(unsigned int B0, unsigned int B1, unsigned int L, unsigned int C)
 {
     _shape.B0 = B0;
     _shape.B1 = B1;
@@ -30,9 +30,9 @@ void Tensor4D::T()
 
     unsigned int matSize = _shape.L * _shape.C;
 
-    for (int b0 = 0; b0 < _shape.B0; b0++)
+    for (unsigned int b0 = 0; b0 < _shape.B0; b0++)
     {
-        for (int b1 = 0; b0 < _shape.B1; b1++)
+        for (unsigned int b1 = 0; b0 < _shape.B1; b1++)
         {
             unsigned int offset = (b0 * _shape.B1 * matSize) + (b1 * matSize);
             MathOps::Transpose(_data + offset, _buffer, _shape.L, _shape.C);
@@ -40,13 +40,13 @@ void Tensor4D::T()
         }
     }
 
-    unsigned short int temp = _shape.C;
+    unsigned int temp = _shape.C;
     _shape.C = _shape.L;
     _shape.L = temp;
     ComputeOffsets();
 }
 
-void Tensor4D::Reshape(unsigned short int B0, unsigned short int B1, unsigned short int L, unsigned short int C)
+void Tensor4D::Reshape(unsigned int B0, unsigned int B1, unsigned int L, unsigned int C)
 {
     unsigned int n = B0 * B1 * L * C;
     unsigned int c = _shape.B0 * _shape.B1 * _shape.L * _shape.C;
@@ -133,9 +133,9 @@ void Tensor4D::SetCacheFriendly(bool flag)
 
     unsigned int matSize = _shape.L * _shape.C;
 
-    for (unsigned short int b0 = 0; b0 < _shape.B0; b0++)
+    for (unsigned int b0 = 0; b0 < _shape.B0; b0++)
     {
-        for (unsigned short int b1 = 0; b1 < _shape.B1; b1++)
+        for (unsigned int b1 = 0; b1 < _shape.B1; b1++)
         {
             unsigned int offset = (b0 * _shape.B1 * matSize) + (b1 * matSize);
 
@@ -171,10 +171,10 @@ void Tensor4D::MatMul(Tensor4D& m0, Tensor4D& m1)
     if((_shape.L != m0._shape.L) || (_shape.C != m1._shape.C))
         throw std::runtime_error("Invalid shape.");
 
-    unsigned short int m0b0Inc = 0;
-    unsigned short int m0b1Inc = 0;
-    unsigned short int m1b0Inc = 0;
-    unsigned short int m1b1Inc = 0;
+    unsigned int m0b0Inc = 0;
+    unsigned int m0b1Inc = 0;
+    unsigned int m1b0Inc = 0;
+    unsigned int m1b1Inc = 0;
 
     if(m0._shape.B1 == m1._shape.B1)
     {
@@ -202,8 +202,8 @@ void Tensor4D::MatMul(Tensor4D& m0, Tensor4D& m1)
         throw std::runtime_error("Invalid shape.");
     }
 
-    unsigned short int newB0 = std::max(m0._shape.B0, m1._shape.B0);
-    unsigned short int newB1 = std::max(m0._shape.B1, m1._shape.B1);
+    unsigned int newB0 = std::max(m0._shape.B0, m1._shape.B0);
+    unsigned int newB1 = std::max(m0._shape.B1, m1._shape.B1);
     unsigned int m0MatSize = m0._shape.L * m0._shape.C;
     unsigned int m1MatSize = m1._shape.L * m1._shape.C;
     unsigned int tgtMatSize = _shape.L * _shape.C;
@@ -217,15 +217,15 @@ void Tensor4D::MatMul(Tensor4D& m0, Tensor4D& m1)
     //set _data to 0
     Set(0);
 
-    unsigned short int m1b0 = 0;
-    unsigned short int m0b0 = 0;
+    unsigned int m1b0 = 0;
+    unsigned int m0b0 = 0;
 
-    for (unsigned short int b0 = 0; b0 < newB0; b0++)
+    for (unsigned int b0 = 0; b0 < newB0; b0++)
     {
-        unsigned short int m1b1 = 0;
-        unsigned short int m0b1 = 0;
+        unsigned int m1b1 = 0;
+        unsigned int m0b1 = 0;
 
-        for (unsigned short int b1 = 0; b1 < newB1; b1++)
+        for (unsigned int b1 = 0; b1 < newB1; b1++)
         {
             
             unsigned int m0Offset = m0b0 * (m0._shape.B1 * m0MatSize) + (m0b1 * m0MatSize);
@@ -256,14 +256,14 @@ void Tensor4D::Add(Tensor4D& src)
 }
 
 SlicedTensor4D Tensor4D::AsSlicedTensor(
-        unsigned short int b0l,
-        unsigned short int b0u,
-        unsigned short int b1l,
-        unsigned short int b1u,
-        unsigned short int ll,
-        unsigned short int lu,
-        unsigned short int cl,
-        unsigned short int cu)
+        unsigned int b0l,
+        unsigned int b0u,
+        unsigned int b1l,
+        unsigned int b1u,
+        unsigned int ll,
+        unsigned int lu,
+        unsigned int cl,
+        unsigned int cu)
 {
     Shape lower;
     Shape upper;
@@ -346,7 +346,7 @@ float* Tensor4D::GetStorage()
     return _data;
 }
 
-float* Tensor4D::GetStorage(unsigned short int b0, unsigned short int b1, unsigned short int l, unsigned short int c)
+float* Tensor4D::GetStorage(unsigned int b0, unsigned int b1, unsigned int l, unsigned int c)
 {
     return _data + GetIndex(b0, b1, l, c);
 }
@@ -358,12 +358,12 @@ Tensor4D::~Tensor4D()
     delete[] _buffer;
 }
 
-float Tensor4D::GetValue(unsigned short int b0, unsigned short int b1, unsigned short int l, unsigned short int c)
+float Tensor4D::GetValue(unsigned int b0, unsigned int b1, unsigned int l, unsigned int c)
 {
     return _data[GetIndex(b0, b1, l, c)];
 }
 
-void Tensor4D::SetValue(unsigned short int b0, unsigned short int b1, unsigned short int l, unsigned short int c, float v)
+void Tensor4D::SetValue(unsigned int b0, unsigned int b1, unsigned int l, unsigned int c, float v)
 {
     _data[GetIndex(b0, b1, l, c)] = v;
 }
@@ -373,7 +373,7 @@ float* Tensor4D::GetLCBuffer()
     return _buffer;
 }
 
-unsigned int Tensor4D::GetIndex(unsigned short int b0, unsigned short int b1, unsigned short int l, unsigned short int c)
+unsigned int Tensor4D::GetIndex(unsigned int b0, unsigned int b1, unsigned int l, unsigned int c)
 {
     return (b0 * (_offsets.B0)) + (b1 * (_offsets.B1)) + (l * _offsets.L) + c;
 }

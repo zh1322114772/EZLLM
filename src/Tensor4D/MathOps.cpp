@@ -1,9 +1,8 @@
 #include "Tensor4D\MathOps.hpp"
-#include <immintrin.h>
 #include <cstddef>
 #include <iostream>
 
-void FORCE_INLINE MatMul8x8Accumulate(float *dst, float *src0, float *src1)
+void FORCE_INLINE MathOps::MatMul8x8Accumulate(float *dst, float *src0, float *src1)
 {
     __m256 c0 = _mm256_loadu_ps(dst + 0);
     __m256 c1 = _mm256_loadu_ps(dst + 8);
@@ -38,7 +37,7 @@ void FORCE_INLINE MatMul8x8Accumulate(float *dst, float *src0, float *src1)
     _mm256_storeu_ps(dst + 56, c7);
 }
 
-float FORCE_INLINE HorizontalSum(__m256 value)
+float FORCE_INLINE MathOps::HorizontalSum(__m256 value)
 {
     __m128 low = _mm256_castps256_ps128(value);
     __m128 high = _mm256_extractf128_ps(value, 1);
@@ -49,6 +48,70 @@ float FORCE_INLINE HorizontalSum(__m256 value)
     sum = _mm_hadd_ps(sum, sum);
 
     return _mm_cvtss_f32(sum);
+}
+
+float MathOps::Dot(float *src0, float *src1, unsigned int size)
+{
+    unsigned int blockEnd = size - size % 64;
+    unsigned int vectorEnd = size - size % 8;
+    unsigned int k = 0;
+
+    __m256 c0 = _mm256_setzero_ps();
+    __m256 c1 = _mm256_setzero_ps();
+    __m256 c2 = _mm256_setzero_ps();
+    __m256 c3 = _mm256_setzero_ps();
+    __m256 c4 = _mm256_setzero_ps();
+    __m256 c5 = _mm256_setzero_ps();
+    __m256 c6 = _mm256_setzero_ps();
+    __m256 c7 = _mm256_setzero_ps();
+
+    for (; k < blockEnd; k+=64)
+    {
+        c0 = _mm256_fmadd_ps(_mm256_loadu_ps(src0 + k), _mm256_loadu_ps(src1 + k), c0);
+        c1 = _mm256_fmadd_ps(_mm256_loadu_ps(src0 + k + 8), _mm256_loadu_ps(src1 + k + 8), c1);
+        c2 = _mm256_fmadd_ps(_mm256_loadu_ps(src0 + k + 16), _mm256_loadu_ps(src1 + k + 16), c2);
+        c3 = _mm256_fmadd_ps(_mm256_loadu_ps(src0 + k + 24), _mm256_loadu_ps(src1 + k + 24), c3);
+        c4 = _mm256_fmadd_ps(_mm256_loadu_ps(src0 + k + 32), _mm256_loadu_ps(src1 + k + 32), c4);
+        c5 = _mm256_fmadd_ps(_mm256_loadu_ps(src0 + k + 40), _mm256_loadu_ps(src1 + k + 40), c5);
+        c6 = _mm256_fmadd_ps(_mm256_loadu_ps(src0 + k + 48), _mm256_loadu_ps(src1 + k + 48), c6);
+        c7 = _mm256_fmadd_ps(_mm256_loadu_ps(src0 + k + 56), _mm256_loadu_ps(src1 + k + 56), c7);
+    }
+
+    for (; k < vectorEnd; k += 8)
+    {
+        c0 = _mm256_fmadd_ps(
+            _mm256_loadu_ps(src0 + k),
+            _mm256_loadu_ps(src1 + k),
+            c0);
+    }
+
+    c0 = _mm256_add_ps(c0, c1);
+    c2 = _mm256_add_ps(c2, c3);
+    c4 = _mm256_add_ps(c4, c5);
+    c6 = _mm256_add_ps(c6, c7);
+
+    c0 = _mm256_add_ps(c0, c2);
+    c4 = _mm256_add_ps(c4, c6);
+
+    c0 = _mm256_add_ps(c0, c4);
+
+    
+    float result = HorizontalSum(c0);
+
+    for (; k < size; ++k)
+    {
+        result += src0[k] * src1[k];
+    }
+
+    return result;
+}
+
+void MathOps::MatVec(float *mat, float *vec, float *dst, unsigned int l, unsigned int c)
+{
+    for (unsigned int currentl = 0; currentl < l; currentl++)
+    {
+        dst[currentl] = Dot(mat + (currentl * c), vec, c);
+    }
 }
 
 float MathOps::VecSum(float *src, unsigned int size)
@@ -149,11 +212,11 @@ void MathOps::VecAdd(float *src, float *src1, float *dst, unsigned int size)
     }
 }
 
-void MathOps::Transpose(float *src, float *dst, unsigned short int l, unsigned short int c)
+void MathOps::Transpose(float *src, float *dst, unsigned int l, unsigned int c)
 {
-    for (unsigned short int i = 0; i < l; i++)
+    for (unsigned int i = 0; i < l; i++)
     {
-        for (unsigned short int j = 0; j < c; j++)
+        for (unsigned int j = 0; j < c; j++)
         {
             dst[(j * l) + c] = src[(i * c) + j];
         }
@@ -183,13 +246,13 @@ void MathOps::MatMul88(float *m0, float *m1, float *dest, unsigned int s0, unsig
     }
 }
 
-void MathOps::CacheFriendly(float *src, float *dst, unsigned short int l, unsigned short int c)
+void MathOps::CacheFriendly(float *src, float *dst, unsigned int l, unsigned int c)
 {
     unsigned int dstOffset = 0;
 
-    for (unsigned short int currentL = 0; currentL < l; currentL+= 8)
+    for (unsigned int currentL = 0; currentL < l; currentL+= 8)
     {
-        for (unsigned short int currentC = 0; currentC < c; currentC+= 8)
+        for (unsigned int currentC = 0; currentC < c; currentC+= 8)
         {
             __m256 c0 = _mm256_loadu_ps(src + ((currentL) * c) + currentC);
             __m256 c1 = _mm256_loadu_ps(src + ((currentL + 1) * c) + currentC);
@@ -215,13 +278,13 @@ void MathOps::CacheFriendly(float *src, float *dst, unsigned short int l, unsign
 }
 
 
-void MathOps::AccessFriendly(float *src, float *dst, unsigned short int l, unsigned short int c)
+void MathOps::AccessFriendly(float *src, float *dst, unsigned int l, unsigned int c)
 {
     unsigned int srcOffset = 0;
 
-    for (unsigned short int currentL = 0; currentL < l; currentL+= 8)
+    for (unsigned int currentL = 0; currentL < l; currentL+= 8)
     {
-        for (unsigned short int currentC = 0; currentC < c; currentC+= 8)
+        for (unsigned int currentC = 0; currentC < c; currentC+= 8)
         {
             __m256 c0 = _mm256_loadu_ps(src + srcOffset);
             __m256 c1 = _mm256_loadu_ps(src + srcOffset + 8);

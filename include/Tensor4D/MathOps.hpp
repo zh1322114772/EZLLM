@@ -1,4 +1,5 @@
 #pragma once
+#include <immintrin.h>
 
 #if defined(_MSC_VER)
     #define FORCE_INLINE __forceinline
@@ -10,7 +11,7 @@
 
 namespace MathOps
 {
-    void Transpose(float *src, float *dst, unsigned short int l, unsigned short int c);
+    void Transpose(float *src, float *dst, unsigned int l, unsigned int c);
 
     void MatMul88(float *m0, float *m1, float *dest, unsigned int s0,  unsigned int s1,  unsigned int s2);
 
@@ -27,7 +28,15 @@ namespace MathOps
 
     void ElementwiseMul(float *src, float *src1, float* dst, unsigned int size);
 
-    void CacheFriendly(float *src, float *dst, unsigned short int l, unsigned short int c);
+    void CacheFriendly(float *src, float *dst, unsigned int l, unsigned int c);
 
-    void AccessFriendly(float *src, float *dst, unsigned short int l, unsigned short int c);
+    void AccessFriendly(float *src, float *dst, unsigned int l, unsigned int c);
+
+    void FORCE_INLINE MatMul8x8Accumulate(float *dst, float *src0, float *src1);
+
+    float FORCE_INLINE HorizontalSum(__m256 value);
+
+    float Dot(float *src0, float *src1, unsigned int size);
+
+    void MatVec(float *mat, float *vec, float *dst, unsigned int l, unsigned int c);
 }

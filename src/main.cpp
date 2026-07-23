@@ -4,6 +4,7 @@
 #include "Tokenizer\GPT2Tokenizer.hpp"
 #include "UTF8.hpp"
 #include "Tensor4D\Tensor4D.hpp"
+#include "Tensor4D\Tensor4DUtils.hpp"
 #include <chrono>
 
 std::string getFormattedTemplate(std::string role, std::string content) 
@@ -18,35 +19,47 @@ int main()
 
     Tensor4D projUp(1, 1, 2560, 960);
     Tensor4D projdown(1, 1, 960, 2560);
-    Tensor4D res(1, 1, 2560, 2560);
+    Tensor4D norm(1, 1, 1, 960);
+    Tensor4D res(1, 1, 960, 960);
     projUp.FromFile(EZLLM_PROJECT_DIR + std::string("/Model/model.layers.0.mlp.up_proj.weight"));
     projdown.FromFile(EZLLM_PROJECT_DIR + std::string("/Model/model.layers.0.mlp.down_proj.weight"));
+    norm.FromFile(EZLLM_PROJECT_DIR + std::string("/Model/model.layers.0.input_layernorm.weight"));
 
     Tensor projUp1(1, 2560, 960);
     Tensor projdown1(1, 960, 2560);
-    Tensor res1(1, 2560, 2560);
+    Tensor norm1(1, 1, 960);
+    Tensor res1(1, 960, 960);
     projUp1.ReadFromFile(EZLLM_PROJECT_DIR + std::string("/Model/model.layers.0.mlp.up_proj.weight"));
     projdown1.ReadFromFile(EZLLM_PROJECT_DIR + std::string("/Model/model.layers.0.mlp.down_proj.weight"));
+    norm1.ReadFromFile(EZLLM_PROJECT_DIR + std::string("/Model/model.layers.0.input_layernorm.weight"));
 
     auto start_time = std::chrono::high_resolution_clock::now();
-    res1.MatMul(projUp1, projdown1);
+    res1.MatMul(projdown1, projUp1);
     auto end_time = std::chrono::high_resolution_clock::now();
-    auto time = (end_time - start_time) / std::chrono::milliseconds(1);
+    std::cout << ((end_time - start_time) / std::chrono::milliseconds(1)) << std::endl;
+
+    start_time = std::chrono::high_resolution_clock::now();
+    res1.RMSNorm(norm1);
+    end_time = std::chrono::high_resolution_clock::now();
     std::cout << res1 << std::endl;
-    std::cout << time << std::endl;
+    std::cout << ((end_time - start_time)) << std::endl;
+
 
     start_time = std::chrono::high_resolution_clock::now();
     projUp.SetCacheFriendly(true);
     projdown.SetCacheFriendly(true);
-    res.MatMul(projUp, projdown);
+    res.MatMul(projdown, projUp);
     res.SetCacheFriendly(false);
     projUp.SetCacheFriendly(false);
     projdown.SetCacheFriendly(false);
     end_time = std::chrono::high_resolution_clock::now();
-    time = (end_time - start_time) / std::chrono::milliseconds(1);
-    std::cout << res << std::endl;
-    std::cout << time << std::endl;
+    std::cout << ((end_time - start_time) / std::chrono::milliseconds(1)) << std::endl;
 
+    start_time = std::chrono::high_resolution_clock::now();
+    TensorUtils::RMSNorm(res, norm);
+    end_time = std::chrono::high_resolution_clock::now();
+    std::cout << res1 << std::endl;
+    std::cout << ((end_time - start_time)) << std::endl;
     /***
     ModelContext *context = new ModelContext();
     Model *model = new Model(EZLLM_PROJECT_DIR + std::string("/Model/"));

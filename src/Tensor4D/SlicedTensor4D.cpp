@@ -30,10 +30,10 @@ void SlicedTensor4D::CopyFrom(SlicedTensor4D& src)
         throw std::invalid_argument("Invalid src/dst tensors");
 
         
-    unsigned short int b0 = _upper.B0 - _lower.B0;
-    unsigned short int b1 = _upper.B1 - _lower.B1;
-    unsigned short int l = _upper.L - _lower.L;
-    unsigned short int c = _upper.C - _lower.C;
+    unsigned int b0 = _upper.B0 - _lower.B0;
+    unsigned int b1 = _upper.B1 - _lower.B1;
+    unsigned int l = _upper.L - _lower.L;
+    unsigned int c = _upper.C - _lower.C;
 
     if((b0 != (src._upper.B0 - src._lower.B0)) || (b1 != (src._upper.B1 - src._lower.B1)) || (l != (src._upper.L - src._lower.L)) || (c != (src._upper.C - src._lower.C)))
         throw std::invalid_argument("Invalid sliced shape.");
@@ -50,11 +50,11 @@ void SlicedTensor4D::CopyFrom(SlicedTensor4D& src)
     unsigned int srcOffsetb1 = srcShape.L * srcShape.C;
     unsigned int srcOffsetl = srcShape.C;
 
-    for (unsigned short int cb0 = 0; cb0 < b0; cb0++)
+    for (unsigned int cb0 = 0; cb0 < b0; cb0++)
     {
-        for (unsigned short int cb1 = 0; cb1 < b1; cb1++)
+        for (unsigned int cb1 = 0; cb1 < b1; cb1++)
         {
-            for (unsigned short int cl = 0; cl < l; cl++)
+            for (unsigned int cl = 0; cl < l; cl++)
             {
                 unsigned int dstOffset = ((cb0 + _lower.B0) * dstOffsetb0) +
                                          ((cb1 + _lower.B1) * dstOffsetb1) +

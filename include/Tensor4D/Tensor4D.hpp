@@ -14,18 +14,18 @@ private:
     float* _data;
     float*_buffer;
 
-    unsigned int GetIndex(unsigned short int b0, unsigned short int b1, unsigned short int l, unsigned short int c);
+    unsigned int GetIndex(unsigned int b0, unsigned int b1, unsigned int l, unsigned int c);
 
     void ComputeOffsets();
 
 public:
-    Tensor4D(unsigned short int B0, unsigned short int B1, unsigned short int L, unsigned short int C);
+    Tensor4D(unsigned int B0, unsigned int B1, unsigned int L, unsigned int C);
 
     ~Tensor4D();
 
     void T();
 
-    void Reshape(unsigned short int B0, unsigned short int B1, unsigned short int L, unsigned short int C);
+    void Reshape(unsigned int B0, unsigned int B1, unsigned int L, unsigned int C);
 
     Shape GetShape();
 
@@ -41,25 +41,25 @@ public:
 
     void MatMul(Tensor4D &m0, Tensor4D &m1);
 
-    float GetValue(unsigned short int b0, unsigned short int b1, unsigned short int l, unsigned short int c);
+    float GetValue(unsigned int b0, unsigned int b1, unsigned int l, unsigned int c);
 
-    void SetValue(unsigned short int b0, unsigned short int b1, unsigned short int l, unsigned short int c, float v);
+    void SetValue(unsigned int b0, unsigned int b1, unsigned int l, unsigned int c, float v);
 
     SlicedTensor4D AsSlicedTensor(
-        unsigned short int b0l,
-        unsigned short int b0u,
-        unsigned short int b1l,
-        unsigned short int b1u,
-        unsigned short int ll,
-        unsigned short int lu,
-        unsigned short int cl,
-        unsigned short int cu);
+        unsigned int b0l,
+        unsigned int b0u,
+        unsigned int b1l,
+        unsigned int b1u,
+        unsigned int ll,
+        unsigned int lu,
+        unsigned int cl,
+        unsigned int cu);
 
     
 
     float *GetStorage();
 
-    float *GetStorage(unsigned short int b0, unsigned short int b1, unsigned short int l, unsigned short int c);
+    float *GetStorage(unsigned int b0, unsigned int b1, unsigned int l, unsigned int c);
 
     float *GetLCBuffer();
 

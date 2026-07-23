@@ -3,8 +3,8 @@
 
 struct Shape
 {
-    unsigned short int B0;
-    unsigned short int B1;
-    unsigned short int L;
-    unsigned short int C;
+    unsigned int B0;
+    unsigned int B1;
+    unsigned int L;
+    unsigned int C;
 };
