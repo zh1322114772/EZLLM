@@ -2,6 +2,7 @@
 #include "Tensor4D/MathOps.hpp"
 #include <stdexcept>
 #include <cmath>
+#include "Global.hpp"
 
 /**
  * void LayerBlock::GroupedQueryAttention(LayerMemory &memory, Tensor &q, Tensor &x, unsigned int position)
@@ -75,9 +76,35 @@
 */
 
 
-void TensorUtils::GQA(Tensor4D& Q, Tensor4D& K, Tensor4D& V, Tensor4D& scoresTemp, Tensor4D& x, unsigned int position, unsigned int QHeads, unsigned int KVHeads)
+void TensorUtils::GQA(Tensor4D& Q, Tensor4D& K, Tensor4D& V, Tensor4D& scoresTemp, Tensor4D& x, unsigned int position, unsigned int QHeadsPerKV, unsigned int KVHeads)
 {
-    
+    if(Q.IsCacheFriendly() || K.IsCacheFriendly() || V.IsCacheFriendly())
+        throw std::runtime_error("Invalid memory layout for Mat-Vec operation");
+
+    Shape matShape = K.GetShape();
+
+    unsigned int adjustedPosition = std::min(matShape.L, position + 1);
+    unsigned int nq = KVHeads * QHeadsPerKV;
+    unsigned int numQPerKv = QHeadsPerKV;
+    float* tempStorage = scoresTemp.GetStorage();
+
+    //reshape input x (1, 1, h, c)
+    x.Reshape(1, 1, nq, matShape.C);
+
+    //shape of Q, K, V should be (1, #head, #token, #channel)
+    for (unsigned int qhead = 0; qhead < nq; qhead++)
+    {
+        unsigned kvhead = qhead / numQPerKv;
+
+        //compute qk
+        MathOps::MatVec(K.GetStorage(0, kvhead, 0, 0), Q.GetStorage(0, qhead, 0, 0), tempStorage, adjustedPosition, matShape.C);
+        MathOps::Softmax(tempStorage, tempStorage, adjustedPosition);
+
+        //comput (qk)v
+        MathOps::ScaleAndReduce(V.GetStorage(9, kvhead, 0, 0), tempStorage, x.GetStorage(0, 0, qhead, 0), adjustedPosition, matShape.C);
+    }
+
+    x.Reshape(1, 1, 1, 960);
 }
 
 void TensorUtils::SiLU(Tensor4D& tgt)

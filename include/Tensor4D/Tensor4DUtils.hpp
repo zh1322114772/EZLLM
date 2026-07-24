@@ -7,5 +7,5 @@ namespace TensorUtils
 
     void SiLU(Tensor4D &tgt);
 
-    void GQA(Tensor4D& Q, Tensor4D& K, Tensor4D& V, Tensor4D& scoresTemp, Tensor4D& x, unsigned int position, unsigned int QHeads, unsigned int KVHeads);
+    void GQA(Tensor4D& Q, Tensor4D& K, Tensor4D& V, Tensor4D& scoresTemp, Tensor4D& x, unsigned int position, unsigned int QHeadsPerKV, unsigned int KVHeads);
 }

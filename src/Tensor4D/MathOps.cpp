@@ -37,6 +37,29 @@ void FORCE_INLINE MathOps::MatMul8x8Accumulate(float *dst, float *src0, float *s
     _mm256_storeu_ps(dst + 56, c7);
 }
 
+float FORCE_INLINE HorizontalMax(__m256 value)
+{
+    // Compare the lower four floats with the upper four floats.
+    __m128 low  = _mm256_castps256_ps128(value);
+    __m128 high = _mm256_extractf128_ps(value, 1);
+    __m128 max4 = _mm_max_ps(low, high);
+
+    // max4 = [max(0,4), max(1,5), max(2,6), max(3,7)]
+
+    __m128 highPair = _mm_movehl_ps(max4, max4);
+    max4 = _mm_max_ps(max4, highPair);
+
+    // Compare lanes 0 and 1.
+    __m128 lane1 = _mm_shuffle_ps(
+        max4,
+        max4,
+        _MM_SHUFFLE(1, 1, 1, 1));
+
+    max4 = _mm_max_ss(max4, lane1);
+
+    return _mm_cvtss_f32(max4);
+}
+
 float FORCE_INLINE MathOps::HorizontalSum(__m256 value)
 {
     __m128 low = _mm256_castps256_ps128(value);
@@ -277,6 +300,96 @@ void MathOps::CacheFriendly(float *src, float *dst, unsigned int l, unsigned int
     }
 }
 
+void MathOps::Softmax(float *src, float *dest, unsigned int size)
+{
+    float max = MathOps::Max(src, size);
+    MathOps::VecAdd(src, -max, dest, size);
+
+    for (unsigned int i = 0; i < size; i++)
+    {
+        dest[i] = std::exp(dest[i]);
+    }
+
+    //norm
+    float sum = MathOps::VecSum(dest, size);
+    MathOps::ElementwiseMul(dest, 1 / sum, dest, size);
+}
+
+float MathOps::Max(float* vec, unsigned int size)
+{
+    if (size == 0)
+    {
+        throw std::invalid_argument(
+            "MathOps::Max requires at least one element.");
+    }
+
+    const unsigned int blockEnd  = size - size % 64;
+    const unsigned int vectorEnd = size - size % 8;
+
+    unsigned int k = 0;
+
+    const __m256 negativeInfinity = _mm256_set1_ps(
+        -std::numeric_limits<float>::infinity());
+
+    __m256 c0 = negativeInfinity;
+    __m256 c1 = negativeInfinity;
+    __m256 c2 = negativeInfinity;
+    __m256 c3 = negativeInfinity;
+    __m256 c4 = negativeInfinity;
+    __m256 c5 = negativeInfinity;
+    __m256 c6 = negativeInfinity;
+    __m256 c7 = negativeInfinity;
+
+    // Process 64 floats per iteration.
+    for (; k < blockEnd; k += 64)
+    {
+        c0 = _mm256_max_ps(c0, _mm256_loadu_ps(vec + k));
+        c1 = _mm256_max_ps(c1, _mm256_loadu_ps(vec + k + 8));
+        c2 = _mm256_max_ps(c2, _mm256_loadu_ps(vec + k + 16));
+        c3 = _mm256_max_ps(c3, _mm256_loadu_ps(vec + k + 24));
+        c4 = _mm256_max_ps(c4, _mm256_loadu_ps(vec + k + 32));
+        c5 = _mm256_max_ps(c5, _mm256_loadu_ps(vec + k + 40));
+        c6 = _mm256_max_ps(c6, _mm256_loadu_ps(vec + k + 48));
+        c7 = _mm256_max_ps(c7, _mm256_loadu_ps(vec + k + 56));
+    }
+
+    // Process remaining complete vectors.
+    for (; k < vectorEnd; k += 8)
+    {
+        c0 = _mm256_max_ps(
+            c0,
+            _mm256_loadu_ps(vec + k));
+    }
+
+    // Reduce eight vector accumulators into one.
+    c0 = _mm256_max_ps(c0, c1);
+    c2 = _mm256_max_ps(c2, c3);
+    c4 = _mm256_max_ps(c4, c5);
+    c6 = _mm256_max_ps(c6, c7);
+
+    c0 = _mm256_max_ps(c0, c2);
+    c4 = _mm256_max_ps(c4, c6);
+
+    c0 = _mm256_max_ps(c0, c4);
+
+    float result = HorizontalMax(c0);
+
+    // Process the remaining 0–7 scalar values.
+    for (; k < size; ++k)
+    {
+        if (vec[k] > result)
+        {
+            result = vec[k];
+        }
+    }
+
+    return result;
+}
+
+void MathOps::ScaleAndReduce(float *mat, float *scaleVec, float *dest, unsigned int l, unsigned int c)
+{
+
+}
 
 void MathOps::AccessFriendly(float *src, float *dst, unsigned int l, unsigned int c)
 {

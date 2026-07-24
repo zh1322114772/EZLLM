@@ -39,4 +39,10 @@ namespace MathOps
     float Dot(float *src0, float *src1, unsigned int size);
 
     void MatVec(float *mat, float *vec, float *dst, unsigned int l, unsigned int c);
+
+    void Softmax(float *src, float *dest, unsigned int size);
+
+    float Max(float *vec, unsigned int size);
+
+    void ScaleAndReduce(float *mat, float *scaleVec, float *dest, unsigned int l, unsigned int c);
 }
